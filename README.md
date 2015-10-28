@@ -1,6 +1,6 @@
 # monlite
 Monitor services and send e-mail warning if something is wrong.
-Supported url schemes are: couch, http, imap, ldap, mysql, smtp, tcp, udp and unix.
+Supported url schemes are: mongodb, couch, http, imap, ldap, mysql, smtp, dns, tcp, udp and unix.
 
 # configuration
 The format of the configuration file is ini. See example:
