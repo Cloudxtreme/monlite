@@ -4,7 +4,7 @@ go:
  - tip
 services:
  - couchdb
- matrix:
+matrix:
   allow_failures:
     - go: tip
 install:
