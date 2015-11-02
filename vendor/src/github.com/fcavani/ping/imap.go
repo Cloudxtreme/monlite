@@ -15,14 +15,6 @@ import (
 	"github.com/mxk/go-imap/imap"
 )
 
-func init() {
-	null, err := os.OpenFile(os.DevNull, os.O_WRONLY|os.O_APPEND, 0600)
-	if err == nil {
-		imap.DefaultLogger = log.New(null, "", 0)
-	}
-	imap.DefaultLogMask = imap.LogNone
-}
-
 const ErrImapFailed = "imap connection failed"
 
 func dialImap(addr string) (c *imap.Client, err error) {
@@ -41,6 +33,16 @@ func PingImap(url *url.URL) error {
 	if url.Scheme != "imap" && url.Scheme != "imaps" {
 		return e.New("not an imap/imaps scheme")
 	}
+
+	var err error
+
+	null, err := os.OpenFile(os.DevNull, os.O_WRONLY|os.O_APPEND, 0600)
+	if err == nil {
+		imap.DefaultLogger = log.New(null, "", 0)
+	}
+	imap.DefaultLogMask = imap.LogNone
+	defer null.Close()
+
 	c, err := dialImap(url.Host)
 	if err != nil {
 		return e.Push(err, ErrImapFailed)

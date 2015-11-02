@@ -14,6 +14,9 @@ import (
 const CouchUrl = "couch://localhost:5984"
 
 func TestPingCouch(t *testing.T) {
+	if !OnTravis() {
+		t.Skip("not on travis")
+	}
 	url, err := url.Parse(CouchUrl)
 	if err != nil {
 		t.Fatal(err)

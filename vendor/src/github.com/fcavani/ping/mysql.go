@@ -9,6 +9,7 @@ import (
 	"net/url"
 
 	"github.com/fcavani/e"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 // PingMySql connects a mysql server and send a ping.

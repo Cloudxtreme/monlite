@@ -4,105 +4,117 @@
 		{
 			"importpath": "github.com/boltdb/bolt",
 			"repository": "https://github.com/boltdb/bolt",
-			"revision": "ee716d1410cb44d1a6b7e59a96a2b2bec23366a9",
+			"revision": "119858097e94ac1089c404206de6f2eef3b22a9b",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/fcavani/buffactory",
 			"repository": "https://github.com/fcavani/buffactory",
-			"revision": "8ce927ad485c1b2c017e77bbb8d4fdc1bd30797f",
+			"revision": "9bafcc48dd6b87037f44400c5a21fd8de7c9ac27",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/fcavani/couch",
 			"repository": "https://github.com/fcavani/couch",
-			"revision": "7af2e1f056d0401c7e61c0f80d4191b5465e5476",
+			"revision": "0264c63080920a87d052c800353537df886ec59a",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/fcavani/e",
 			"repository": "https://github.com/fcavani/e",
-			"revision": "98890e6305048c12ffffe1395f9afe37a2ccdbb4",
+			"revision": "7f704e312fe36a8cdd53f7d2540a8eeb9f82fb01",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/fcavani/log",
 			"repository": "https://github.com/fcavani/log",
-			"revision": "e88639f87d81d05d8b3e7a70a32540ca0481e478",
+			"revision": "2efff1d27cb5c1fbd65c2bdc91f9c7c0278a8998",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/fcavani/math",
 			"repository": "https://github.com/fcavani/math",
-			"revision": "f0d216420cb381002a355e6d362d512851960e4f",
+			"revision": "37ca4bdfeeeb1cb36ec9ff7a4cd55756dd242425",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/fcavani/net",
 			"repository": "https://github.com/fcavani/net",
-			"revision": "7e2e25bfe67c85e2941d4896c94a44f43dd7cfeb",
+			"revision": "35f9f2aa3cae24fc8d533e2396054878393d6877",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/fcavani/net/smtp",
 			"repository": "https://github.com/fcavani/net",
-			"revision": "2836861083b5a24d75a7764e0b286572587fb8e8",
+			"revision": "35f9f2aa3cae24fc8d533e2396054878393d6877",
 			"branch": "master",
 			"path": "/smtp"
 		},
 		{
 			"importpath": "github.com/fcavani/ping",
 			"repository": "https://github.com/fcavani/ping",
-			"revision": "e2b7ad2ee3511768d0dcd77cf363bbea1c436124",
+			"revision": "78ea865631980d89a5140e03cae4e17aa86f8583",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/fcavani/rand",
 			"repository": "https://github.com/fcavani/rand",
-			"revision": "d771811b268105e37d8afe2e28cdc0543ccd81c6",
+			"revision": "188a1d7a237e0f6afc3bad4e239b8f503a91c9ae",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/fcavani/tags",
 			"repository": "https://github.com/fcavani/tags",
-			"revision": "4cea92806995273319b95e06eda0ff848b2abcf6",
+			"revision": "f332513823058d284517c8cb992fdb6f1a5cefd5",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/fcavani/text",
 			"repository": "https://github.com/fcavani/text",
-			"revision": "38f9cc6381e8b08c9cb40e1e370f61e4b9c3b899",
+			"revision": "6d52f525eebc108bf819475d6e47bffdda207e77",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/fcavani/types",
 			"repository": "https://github.com/fcavani/types",
-			"revision": "19f00f831b27cb862e7a48152dcf58dd6c9f6d44",
+			"revision": "5a1acd11223186c58d6124663ee2e320c6779bbd",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/fcavani/unicode",
 			"repository": "https://github.com/fcavani/unicode",
-			"revision": "f4467d8ffc5abb33b25077ff018db5ecebeb4d18",
+			"revision": "d197a1fbe7c62856dfcc1977efc6c2b21fa1bbf4",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/fcavani/utilitybelt/deepcopy",
 			"repository": "https://github.com/fcavani/utilitybelt",
-			"revision": "0ab71674680e943fb483de2791de1c4bf1da4c33",
+			"revision": "73c3f7f58ff3ad3f8ae0f44aee46753fb11ae95f",
 			"branch": "master",
 			"path": "/deepcopy"
 		},
 		{
+			"importpath": "github.com/go-logfmt/logfmt",
+			"repository": "https://github.com/go-logfmt/logfmt",
+			"revision": "c50dc9aa845e681529d8e49d3dc11ec0195aacac",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/go-sql-driver/mysql",
+			"repository": "https://github.com/go-sql-driver/mysql",
+			"revision": "69e3ed7607d7c139386480824801584c947c67cf",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/jessevdk/go-flags",
 			"repository": "https://github.com/jessevdk/go-flags",
-			"revision": "4047bd797dd935ae2b557a79cc43f223066c9659",
+			"revision": "fc93116606d0a71d7e9de0ad5734fdb4b8eae834",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/miekg/dns",
 			"repository": "https://github.com/miekg/dns",
-			"revision": "adeb323cbc8e73c87181c5ac9d393d66bbc4e165",
+			"revision": "6a1556664fd2025e348a1c2349484a424a7d1d9a",
 			"branch": "master"
 		},
 		{

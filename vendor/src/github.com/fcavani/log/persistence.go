@@ -21,6 +21,7 @@ var DateFormat = time.RFC3339
 type SendToLogger struct {
 	f Formatter
 	*golog.Logger
+	r Ruler
 }
 
 func (s *SendToLogger) F(f Formatter) LogBackend {
@@ -32,6 +33,11 @@ func (s *SendToLogger) GetF() Formatter {
 	return s.f
 }
 
+func (s *SendToLogger) Filter(r Ruler) LogBackend {
+	s.r = r
+	return s
+}
+
 func (s *SendToLogger) Commit(entry Entry) {
 	var err error
 	defer func() {
@@ -41,6 +47,9 @@ func (s *SendToLogger) Commit(entry Entry) {
 	}()
 	if s.f == nil {
 		err = e.New("formater not set")
+		return
+	}
+	if s.r != nil && !s.r.Result(entry) {
 		return
 	}
 	entry.Formatter(s.f)
@@ -59,12 +68,12 @@ func NewSendToLogger(logger *golog.Logger) LogBackend {
 	}
 }
 
-type other struct {
+type outer struct {
 	ch  chan []byte
 	buf []byte
 }
 
-func (o *other) Write(p []byte) (n int, err error) {
+func (o *outer) Write(p []byte) (n int, err error) {
 	o.buf = append(o.buf, p...)
 	i := bytes.Index(o.buf, []byte{'\n'})
 	if i == -1 {
@@ -81,9 +90,10 @@ func (o *other) Write(p []byte) (n int, err error) {
 
 // MultiLog copy the log entry to multiples backends.
 type MultiLog struct {
-	mp []LogBackend
+	mp      []LogBackend
 	chclose chan chan struct{}
-	o       *other
+	o       *outer
+	r       Ruler
 }
 
 //NewMulti creates a MultiLog
@@ -121,15 +131,23 @@ func (mp *MultiLog) GetF() Formatter {
 	return nil
 }
 
+func (mp *MultiLog) Filter(r Ruler) LogBackend {
+	mp.r = r
+	return mp
+}
+
 func (mp *MultiLog) Commit(entry Entry) {
+	if mp.r != nil && !mp.r.Result(entry) {
+		return
+	}
 	for _, p := range mp.mp {
 		p.Commit(entry)
 	}
 }
 
-// OtherLog is like others OtherLogs but the nem entry is
+// outerLog is like outers outerLogs but the nem entry is
 // created from the first BackLog in the list.
-func (mp *MultiLog) OtherLog(tag string) io.Writer {
+func (mp *MultiLog) OuterLog(tag string) io.Writer {
 	if mp.o != nil {
 		return mp.o
 	}
@@ -151,7 +169,7 @@ func (mp *MultiLog) OtherLog(tag string) io.Writer {
 			}
 		}
 	}()
-	mp.o = &other{
+	mp.o = &outer{
 		ch:  ch,
 		buf: make([]byte, 0),
 	}
@@ -169,14 +187,14 @@ func (mp *MultiLog) Close() error {
 	return nil
 }
 
-
 // Writer log to an io.Writer
 type Writer struct {
 	f       Formatter
 	w       io.Writer
 	chclose chan chan struct{}
-	o       *other
+	o       *outer
 	lck     sync.Mutex
+	r       Ruler
 }
 
 // NewWriter creates a backend that log to w.
@@ -195,6 +213,11 @@ func (w *Writer) GetF() Formatter {
 	return w.f
 }
 
+func (w *Writer) Filter(r Ruler) LogBackend {
+	w.r = r
+	return w
+}
+
 func (w *Writer) Writer(writter io.Writer) {
 	w.lck.Lock()
 	defer w.lck.Unlock()
@@ -210,6 +233,9 @@ func (w *Writer) Commit(entry Entry) {
 			CommitFail(entry, err)
 		}
 	}()
+	if w.r != nil && !w.r.Result(entry) {
+		return
+	}
 	if w.f == nil {
 		err = e.New("formater not set")
 		return
@@ -218,12 +244,12 @@ func (w *Writer) Commit(entry Entry) {
 	buf := entry.Bytes()
 	l := len(buf)
 	if buf[l-1] != '\n' {
-		if cap(buf) < l + 1 {
-			tmp := make([]byte, l + 1)
+		if cap(buf) < l+1 {
+			tmp := make([]byte, l+1)
 			copy(tmp, buf)
 			buf = tmp
 		}
-		buf = buf[0:l+1]
+		buf = buf[0 : l+1]
 		buf[len(buf)-1] = '\n'
 	}
 	var n int
@@ -236,7 +262,7 @@ func (w *Writer) Commit(entry Entry) {
 	}
 }
 
-func (w *Writer) OtherLog(tag string) io.Writer {
+func (w *Writer) OuterLog(tag string) io.Writer {
 	if w.o != nil {
 		return w.o
 	}
@@ -254,7 +280,7 @@ func (w *Writer) OtherLog(tag string) io.Writer {
 			}
 		}
 	}()
-	w.o = &other{
+	w.o = &outer{
 		ch:  ch,
 		buf: make([]byte, 0),
 	}
@@ -276,7 +302,8 @@ type Generic struct {
 	f       Formatter
 	s       Storer
 	chclose chan chan struct{}
-	o       *other
+	o       *outer
+	r       Ruler
 }
 
 func NewGeneric(s Storer) LogBackend {
@@ -295,6 +322,11 @@ func (g *Generic) GetF() Formatter {
 	return g.f
 }
 
+func (g *Generic) Filter(r Ruler) LogBackend {
+	g.r = r
+	return g
+}
+
 func (g *Generic) Commit(entry Entry) {
 	var err error
 	defer func() {
@@ -302,6 +334,9 @@ func (g *Generic) Commit(entry Entry) {
 			CommitFail(entry, err)
 		}
 	}()
+	if g.r != nil && !g.r.Result(entry) {
+		return
+	}
 	if g.f == nil {
 		err = e.New("formater not set")
 		return
@@ -320,7 +355,7 @@ func (g *Generic) Commit(entry Entry) {
 	}
 }
 
-func (g *Generic) OtherLog(tag string) io.Writer {
+func (g *Generic) OuterLog(tag string) io.Writer {
 	if g.o != nil {
 		return g.o
 	}
@@ -338,7 +373,7 @@ func (g *Generic) OtherLog(tag string) io.Writer {
 			}
 		}
 	}()
-	g.o = &other{
+	g.o = &outer{
 		ch:  ch,
 		buf: make([]byte, 0),
 	}

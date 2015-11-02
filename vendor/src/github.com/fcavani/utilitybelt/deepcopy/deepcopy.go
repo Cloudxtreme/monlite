@@ -12,8 +12,8 @@ import (
 	"reflect"
 )
 
-// InterfaceToSliceOfStrings takes an interface that is a slice of strings
-// and returns a deep copy of it as a slice of strings.
+// InterfaceToSliceOfStrings takes an interface that is either a slice of
+// strings or a string and returns a deep copy of it as a slice of strings.
 func InterfaceToSliceOfStrings(v interface{}) []string {
 	if v == nil {
 		return nil
@@ -26,6 +26,8 @@ func InterfaceToSliceOfStrings(v interface{}) []string {
 		for i := 0; i < s.Len(); i++ {
 			sl[i] = s.Index(i).Interface().(string)
 		}
+	case reflect.String:
+		sl = append(sl, reflect.ValueOf(v).Interface().(string))
 	default:
 		return nil
 	}
@@ -47,6 +49,8 @@ func InterfaceToSliceOfInts(v interface{}) []int {
 		for i := 0; i < s.Len(); i++ {
 			sl[i] = s.Index(i).Interface().(int)
 		}
+	case reflect.Int:
+		sl = append(sl, reflect.ValueOf(v).Interface().(int))
 	default:
 		return nil
 	}
@@ -61,16 +65,16 @@ func Iface(iface interface{}) interface{} {
 	// Make the interface a reflect.Value
 	original := reflect.ValueOf(iface)
 	// Make a copy of the same type as the original.
-	copy := reflect.New(original.Type()).Elem()
+	cpy := reflect.New(original.Type()).Elem()
 	// Recursively copy the original.
-	copyRecursive(original, copy)
+	copyRecursive(original, cpy)
 	// Return theb copy as an interface.
-	return copy.Interface()
+	return cpy.Interface()
 }
 
 // copyRecursive does the actual copying of the interface. It currently has
 // limited support for what it can handle. Add as needed.
-func copyRecursive(original, copy reflect.Value) {
+func copyRecursive(original, cpy reflect.Value) {
 	// handle according to original's Kind
 	switch original.Kind() {
 	case reflect.Ptr:
@@ -80,15 +84,9 @@ func copyRecursive(original, copy reflect.Value) {
 		if !originalValue.IsValid() {
 			return
 		}
-		if !copy.CanSet() {
-			return
-		}
-		copy.Set(reflect.New(originalValue.Type()))
-		copyRecursive(originalValue, copy.Elem())
+		cpy.Set(reflect.New(originalValue.Type()))
+		copyRecursive(originalValue, cpy.Elem())
 	case reflect.Interface:
-		if !copy.CanSet() {
-			return
-		}
 		// Get the value for the interface, not the pointer.
 		originalValue := original.Elem()
 		if !originalValue.IsValid() {
@@ -97,58 +95,39 @@ func copyRecursive(original, copy reflect.Value) {
 		// Get the value by calling Elem().
 		copyValue := reflect.New(originalValue.Type()).Elem()
 		copyRecursive(originalValue, copyValue)
-		copy.Set(copyValue)
+		cpy.Set(copyValue)
 	case reflect.Struct:
 		// Go through each field of the struct and copy it.
 		for i := 0; i < original.NumField(); i++ {
-			copyRecursive(original.Field(i), copy.Field(i))
+			if cpy.Field(i).CanSet() {
+				copyRecursive(original.Field(i), cpy.Field(i))
+			}
 		}
 	case reflect.Slice:
-		if !copy.CanSet() {
-			return
-		}
 		// Make a new slice and copy each element.
-		copy.Set(reflect.MakeSlice(original.Type(), original.Len(), original.Cap()))
+		cpy.Set(reflect.MakeSlice(original.Type(), original.Len(), original.Cap()))
 		for i := 0; i < original.Len(); i++ {
-			copyRecursive(original.Index(i), copy.Index(i))
+			copyRecursive(original.Index(i), cpy.Index(i))
 		}
 	case reflect.Map:
-		if !copy.CanSet() {
-			return
-		}
-		copy.Set(reflect.MakeMap(original.Type()))
+		cpy.Set(reflect.MakeMap(original.Type()))
 		for _, key := range original.MapKeys() {
 			originalValue := original.MapIndex(key)
 			copyValue := reflect.New(originalValue.Type()).Elem()
 			copyRecursive(originalValue, copyValue)
-			copy.SetMapIndex(key, copyValue)
+			cpy.SetMapIndex(key, copyValue)
 		}
 	// Set the actual values from here on.
 	case reflect.String:
-		if !original.CanSet() || !copy.CanSet() {
-			return
-		}
-		copy.SetString(original.Interface().(string))
+		cpy.SetString(original.Interface().(string))
 	case reflect.Int:
-		if !original.CanSet() || !copy.CanSet() {
-			return
-		}
-		copy.SetInt(int64(original.Interface().(int)))
+		cpy.SetInt(int64(original.Interface().(int)))
 	case reflect.Bool:
-		if !original.CanSet() || !copy.CanSet() {
-			return
-		}
-		copy.SetBool(original.Interface().(bool))
+		cpy.SetBool(original.Interface().(bool))
 	case reflect.Float64:
-		if !original.CanSet() || !copy.CanSet() {
-			return
-		}
-		copy.SetFloat(original.Interface().(float64))
+		cpy.SetFloat(original.Interface().(float64))
 
 	default:
-		if !original.CanSet() || !copy.CanSet() {
-			return
-		}
-		copy.Set(original)
+		cpy.Set(original)
 	}
 }

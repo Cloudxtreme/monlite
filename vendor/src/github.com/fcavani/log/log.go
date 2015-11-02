@@ -16,6 +16,7 @@ import (
 	"github.com/fcavani/e"
 	"github.com/fcavani/tags"
 	"github.com/fcavani/types"
+	"github.com/go-logfmt/logfmt"
 )
 
 var Log Logger
@@ -42,9 +43,9 @@ func init() {
 }
 
 type log struct {
-	Timestamp time.Time  `bson:"key",log:"date"`
+	Timestamp time.Time  `bson:"key" log:"date"`
 	Priority  Level      `log:"level"`
-	Labels    *tags.Tags `log:"tags",def:"no tags"`
+	Labels    *tags.Tags `log:"tags" def:"no tags"`
 	Msg       string     `log:"msg"`
 	Dom       string     `log:"domain"`
 	E         error
@@ -66,6 +67,38 @@ func New(b LogBackend, debug bool) *log {
 		store:    b,
 		Debug:    debug,
 	}
+}
+
+func (l *log) Logfmt(enc *logfmt.Encoder) error {
+	err := enc.EncodeKeyval("date", l.Timestamp)
+	if err != nil {
+		return e.Forward(err)
+	}
+	err = enc.EncodeKeyval("level", l.Priority)
+	if err != nil {
+		return e.Forward(err)
+	}
+	err = enc.EncodeKeyval("tags", l.Labels.String())
+	if err != nil {
+		return e.Forward(err)
+	}
+	err = enc.EncodeKeyval("msg", l.Msg)
+	if err != nil {
+		return e.Forward(err)
+	}
+	err = enc.EncodeKeyval("domain", l.Dom)
+	if err != nil {
+		return e.Forward(err)
+	}
+	err = enc.EncodeKeyval("file", l.File)
+	if err != nil {
+		return e.Forward(err)
+	}
+	err = enc.EndRecord()
+	if err != nil {
+		return e.Forward(err)
+	}
+	return nil
 }
 
 func (l *log) clone() *log {
@@ -123,9 +156,9 @@ func (l *log) Message() string {
 	return l.Msg
 }
 
-func (l *log) Tag(tag string) Logger {
+func (l *log) Tag(tags ...string) Logger {
 	n := l.clone()
-	n.E = e.Forward(n.Labels.Add(tag))
+	n.E = e.Forward(n.Labels.MergeFromStringSlice(tags))
 	l.error(n.E)
 	return n
 }
@@ -168,6 +201,17 @@ func (l *log) SetStore(b LogBackend) Logger {
 	n := l.clone()
 	n.store = b
 	return n
+}
+
+func (l *log) Sorter(r Ruler) Logger {
+	n := l.clone()
+	n.store.Filter(r)
+	return n
+}
+
+func (l *log) SetLevel(level Level) Logger {
+	l.store.Filter(Op(Le, "level", level))
+	return l
 }
 
 func (l *log) Bytes() []byte {
@@ -450,8 +494,8 @@ func PanicLevel() Logger {
 	return Log.PanicLevel()
 }
 
-func Tag(tag string) Logger {
-	return Log.Tag(tag)
+func Tag(tags ...string) Logger {
+	return Log.Tag(tags...)
 }
 
 func GoPanic(r interface{}, stack []byte, cont bool) {
@@ -471,4 +515,12 @@ func Store() LogBackend {
 func GetLogger() Logger {
 	n := Log.(*log).clone()
 	return n
+}
+
+func Sorter(r Ruler) Logger {
+	return Log.Sorter(r)
+}
+
+func SetLevel(l Level) Logger {
+	return Log.SetLevel(l)
 }

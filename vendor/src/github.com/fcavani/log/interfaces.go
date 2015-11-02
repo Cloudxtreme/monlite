@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/fcavani/tags"
+	"github.com/go-logfmt/logfmt"
 )
 
 type Entry interface {
@@ -28,9 +29,15 @@ type Entry interface {
 	Err() error
 	// String return the formated log
 	String() string
+	// Bytes return the formated log in bytes
 	Bytes() []byte
 	// Formatter sets the formater for that entry
 	Formatter(f Formatter)
+	// Sorter set one filter for the backend associated with the logger.
+	// This filter works after the filter set in the New statment.
+	Sorter(r Ruler) Logger
+	// SetLevel sets the log Level for this logger
+	SetLevel(l Level) Logger
 }
 
 type TemplateSetup interface {
@@ -60,6 +67,8 @@ type LogBackend interface {
 	F(f Formatter) LogBackend
 	// GetF returns the Formatter for this backend.
 	GetF() Formatter
+	//Filter change the filter associated to this backend
+	Filter(r Ruler) LogBackend
 }
 
 type Cursor interface {
@@ -104,7 +113,7 @@ type Levels interface {
 
 type Tagger interface {
 	// Tag attach a tag
-	Tag(tag string) Logger
+	Tag(tags ...string) Logger
 }
 type Storage interface {
 	// Store give access to the persistence storage
@@ -129,16 +138,16 @@ type StdLogger interface {
 
 type PanicStack interface {
 	// GoPanic handle a panic where r is the value of recover()
-	// stack is the buffer with the stack dump e cont if false
+	// stack is the buffer where will be the stack dump and cont is false if
 	// GoPanic will call os.Exit(1).
 	GoPanic(r interface{}, stack []byte, cont bool)
 }
 
 // OtherLogger provides a interface to plug via a writer another logger to this
 // logger, in this case the backend that implements OtherLogger
-type OtherLogger interface {
+type OuterLogger interface {
 	// OtherLog creats a writer that receive log entries separeted by \n.
-	OtherLog(tag string) io.Writer
+	OuterLog(tag string) io.Writer
 	// Close closses the outer logger. If not closed you will have a leeked gorotine.
 	Close() error
 }
@@ -158,6 +167,11 @@ type Logger interface {
 	Error(...interface{})
 	Errorf(string, ...interface{})
 	Errorln(...interface{})
+}
+
+// Logfmter encode a log entry in logfmt format.
+type Logfmter interface {
+	Logfmt(enc *logfmt.Encoder) error
 }
 
 // go test -bench=. -cpu=1,4 -benchmem

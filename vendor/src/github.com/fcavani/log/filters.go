@@ -18,6 +18,7 @@ type filter struct {
 	r Ruler
 }
 
+// Filter creates a new filter with rules r for l backend.
 func Filter(l LogBackend, r Ruler) LogBackend {
 	return &filter{
 		LogBackend: l,
@@ -36,6 +37,7 @@ func (f *filter) F(formatter Formatter) LogBackend {
 	return f
 }
 
+// Operation defines one operator for the rules.
 type Operation uint8
 
 const (
@@ -311,7 +313,7 @@ func (a and) Result(entry Entry) (r bool) {
 	return
 }
 
-// And operador between two rules.
+// And operator between two rules.
 func And(v ...Ruler) Ruler {
 	return &and{
 		rulers: v,
@@ -330,7 +332,7 @@ func (o or) Result(entry Entry) (r bool) {
 	return
 }
 
-// Or operador between two rules.
+// Or operator between two rules.
 func Or(v ...Ruler) Ruler {
 	return &or{
 		rulers: v,
@@ -345,7 +347,7 @@ func (n not) Result(entry Entry) bool {
 	return !n.Ruler.Result(entry)
 }
 
-// Not operador for one rule.
+// Not operator for one rule.
 func Not(r Ruler) Ruler {
 	return &not{
 		Ruler: r,
