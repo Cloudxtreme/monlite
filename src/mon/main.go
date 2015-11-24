@@ -186,6 +186,33 @@ func main() {
 				}
 				return nil
 			},
+			OnUnFail: func(m *monlite.Monitor) error {
+
+				body := "Mime-Version: 1.0\n"
+				body += "Content-Type: text/plain; charset=utf-8\n"
+				body += "From:" + cfgMail.Key("from").String() + "\n"
+				body += "To:" + cfgMail.Key("to").String() + "\n"
+				body += "Subject: [" + hostname + "] " + "Monitor ok for " + m.Name + "\n"
+				body += "Hi! This is " + hostname + ".\n\n"
+				body += "Monitor ok for " + m.Name + " " + m.Url + "\n\n"
+				body += "Tank you, our lazy boy.\n"
+				body += time.Now().Format(time.RFC1123Z)
+
+				err := mysmtp.SendMail(
+					cfgMail.Key("smtp").String(),
+					auth,
+					cfgMail.Key("from").String(),
+					[]string{cfgMail.Key("to").String()},
+					cfgMail.Key("helo").String(),
+					[]byte(body),
+					time.Duration(smtpTimeout)*time.Second,
+					false,
+				)
+				if err != nil {
+					return e.Forward(err)
+				}
+				return nil
+			},
 		})
 	}
 
