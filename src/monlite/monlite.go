@@ -40,7 +40,7 @@ func (m *Monitor) ping() (resp chan error) {
 		start := time.Now()
 		err := ping.PingRawUrl(m.Url)
 		if err != nil {
-			log.Errorf("Ping failed for %v with error: %v", m.Name, err)
+			log.Errorf("Ping failed for %v with error: %v", m.Name, e.Trace(e.Forward(err)))
 			resp <- e.Forward(err)
 			return
 		}

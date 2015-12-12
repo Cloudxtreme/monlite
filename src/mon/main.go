@@ -33,6 +33,7 @@ type options struct {
 }
 
 func main() {
+	println("Starting monlite...")
 	// Configuration
 	var opts options
 	_, err := flags.Parse(&opts)
@@ -45,6 +46,7 @@ func main() {
 	}
 
 	// Log stuff
+	println("Log...")
 	name := appname
 	pid := os.Getpid()
 	pidstr := strconv.FormatInt(int64(pid), 10)
@@ -63,7 +65,7 @@ func main() {
 		}
 		stderrBack = log.Filter(
 			log.NewWriter(os.Stderr).F(log.DefFormatter),
-			log.Op(log.Le, "level", level),
+			log.Op(log.Ge, "level", level),
 		)
 	}
 
@@ -85,7 +87,7 @@ func main() {
 		defer f.Close()
 		fileBack = log.Filter(
 			log.NewWriter(f).F(log.DefFormatter),
-			log.Op(log.Le, "level", level),
+			log.Op(log.Ge, "level", level),
 		)
 	}
 
@@ -102,7 +104,11 @@ func main() {
 		).Domain(name).InfoLevel()
 	}
 
+	log.Println("Log Ok!")
+
 	dns.SetLookupHostFunction(net.LookupHost)
+
+	log.Println("Configuration...")
 
 	cfgMail := cfg.Section("mail")
 
@@ -216,6 +222,8 @@ func main() {
 		})
 	}
 
+	log.Println("Starting monitors...")
+
 	for _, m := range mons {
 		err := m.Start()
 		if err != nil {
@@ -223,11 +231,16 @@ func main() {
 		}
 	}
 
+	log.Println("Monitors ok!")
+
 	sig := make(chan os.Signal)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGKILL, syscall.SIGTERM)
 	<-sig
 
+	log.Println("Stop monitors...")
+
 	for _, m := range mons {
+		log.DebugLevel().Printf("Stop monitor %v", m.Name)
 		err := m.Stop()
 		if err != nil {
 			log.Errorf("Failed to start monitor for %v. Error: %v", m.Name, err)
