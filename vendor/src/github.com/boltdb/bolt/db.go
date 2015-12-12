@@ -63,6 +63,10 @@ type DB struct {
 	// https://github.com/boltdb/bolt/issues/284
 	NoGrowSync bool
 
+	// If you want to read the entire database fast, you can set MmapFlag to
+	// syscall.MAP_POPULATE on Linux 2.6.23+ for sequential read-ahead.
+	MmapFlags int
+
 	// MaxBatchSize is the maximum size of a batch. Default value is
 	// copied from DefaultMaxBatchSize in Open.
 	//
@@ -136,6 +140,7 @@ func Open(path string, mode os.FileMode, options *Options) (*DB, error) {
 		options = DefaultOptions
 	}
 	db.NoGrowSync = options.NoGrowSync
+	db.MmapFlags = options.MmapFlags
 
 	// Set default values for later DB operations.
 	db.MaxBatchSize = DefaultMaxBatchSize
@@ -172,7 +177,7 @@ func Open(path string, mode os.FileMode, options *Options) (*DB, error) {
 
 	// Initialize the database if it doesn't exist.
 	if info, err := db.file.Stat(); err != nil {
-		return nil, fmt.Errorf("stat error: %s", err)
+		return nil, err
 	} else if info.Size() == 0 {
 		// Initialize new files with meta pages.
 		if err := db.init(); err != nil {
@@ -184,7 +189,7 @@ func Open(path string, mode os.FileMode, options *Options) (*DB, error) {
 		if _, err := db.file.ReadAt(buf[:], 0); err == nil {
 			m := db.pageInBuffer(buf[:], 0).meta()
 			if err := m.validate(); err != nil {
-				return nil, fmt.Errorf("meta0 error: %s", err)
+				return nil, err
 			}
 			db.pageSize = int(m.pageSize)
 		}
@@ -248,10 +253,10 @@ func (db *DB) mmap(minsz int) error {
 
 	// Validate the meta pages.
 	if err := db.meta0.validate(); err != nil {
-		return fmt.Errorf("meta0 error: %s", err)
+		return err
 	}
 	if err := db.meta1.validate(); err != nil {
-		return fmt.Errorf("meta1 error: %s", err)
+		return err
 	}
 
 	return nil
@@ -672,6 +677,9 @@ type Options struct {
 	// Open database in read-only mode. Uses flock(..., LOCK_SH |LOCK_NB) to
 	// grab a shared lock (UNIX).
 	ReadOnly bool
+
+	// Sets the DB.MmapFlags flag before memory mapping the file.
+	MmapFlags int
 }
 
 // DefaultOptions represent the options used if nil options are passed into Open().

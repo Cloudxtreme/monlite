@@ -6,18 +6,16 @@ package ping
 
 import (
 	"net/url"
-	"time"
 
 	"github.com/fcavani/e"
 
 	"gopkg.in/mgo.v2"
 )
 
-var MongoDbTimeout time.Duration = 60 * time.Second
 var Tryies int = 10
 
 func PingMongoDb(u *url.URL) error {
-	session, err := mgo.DialWithTimeout(u.String(), MongoDbTimeout)
+	session, err := mgo.DialWithTimeout(u.String(), DialTimeout)
 	if err != nil {
 		return e.New(err)
 	}

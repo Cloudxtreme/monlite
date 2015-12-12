@@ -61,11 +61,19 @@ func (et *TestStruct) Formatter(f Formatter) {
 
 }
 
-func (et *TestStruct) SetLevel(level Level) Logger {
+func (et *TestStruct) SetLevel(scope string, level Level) Logger {
 	return nil
 }
 
 func (et *TestStruct) Sorter(r Ruler) Logger {
+	return nil
+}
+
+func (et *TestStruct) EntryLevel(l Level) Logger {
+	return nil
+}
+
+func (et *TestStruct) DebugInfo() Logger {
 	return nil
 }
 

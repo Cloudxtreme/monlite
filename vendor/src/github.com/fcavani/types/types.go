@@ -21,6 +21,7 @@ func init() {
 	typemap = make(map[string]reflect.Type, 100)
 	Insert(errors.New(""))
 	InsertName("os.errorString", errors.New(""))
+	InsertName("error", errors.New(""))
 	Insert("")
 	Insert(new(string))
 	Insert(int(0))

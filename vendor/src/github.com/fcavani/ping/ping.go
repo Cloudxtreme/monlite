@@ -17,18 +17,12 @@ import (
 
 var httpClient *http.Client
 var tlsConfig *tls.Config
+var transport *http.Transport
 
 var DialTimeout time.Duration = 60 * time.Second
 var TLSHandshakeTimeout time.Duration = 60 * time.Second
 var ResponseHeaderTimeout time.Duration = 60 * time.Second
 var HttpTimeout time.Duration = 60 * time.Second
-
-var transport *http.Transport = &http.Transport{
-	DisableKeepAlives:     true,
-	Dial:                  (&net.Dialer{Timeout: DialTimeout}).Dial,
-	TLSHandshakeTimeout:   TLSHandshakeTimeout,
-	ResponseHeaderTimeout: ResponseHeaderTimeout,
-}
 
 func SkipSecurityChecksTLS(b bool) {
 	tlsConfig = &tls.Config{InsecureSkipVerify: b}
@@ -40,7 +34,15 @@ func SkipSecurityChecksTLS(b bool) {
 }
 
 func init() {
+	transport = &http.Transport{
+		DisableKeepAlives:     true,
+		Dial:                  (&net.Dialer{Timeout: DialTimeout}).Dial,
+		TLSHandshakeTimeout:   TLSHandshakeTimeout,
+		ResponseHeaderTimeout: ResponseHeaderTimeout,
+	}
+
 	httpClient = &http.Client{Transport: transport}
+
 }
 
 const ErrNotAnwsered = "not anwsered"

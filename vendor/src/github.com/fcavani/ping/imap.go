@@ -5,24 +5,39 @@
 package ping
 
 import (
-	"log"
+	"crypto/tls"
+	golog "log"
+	"net"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/fcavani/e"
+	"github.com/fcavani/log"
 	"github.com/mxk/go-imap/imap"
 )
+
+func init() {
+	outer := log.Log.Store().(log.OuterLogger)
+	w := outer.OuterLog(log.DebugPrio, "imap")
+	imap.DefaultLogger = golog.New(w, "", 0)
+	imap.DefaultLogMask = imap.LogNone
+}
 
 const ErrImapFailed = "imap connection failed"
 
 func dialImap(addr string) (c *imap.Client, err error) {
+	var conn net.Conn
 	if strings.HasSuffix(addr, ":993") {
-		c, err = imap.DialTLS(addr, tlsConfig)
+		//c, err = imap.DialTLS(addr, tlsConfig)
+		conn, err = tls.DialWithDialer((&net.Dialer{Timeout: DialTimeout}), "tcp", addr, tlsConfig)
 	} else {
-		c, err = imap.Dial(addr)
+		conn, err = net.DialTimeout("tcp", addr, DialTimeout)
 	}
+	if err != nil {
+		return nil, e.New(err)
+	}
+	c, err = imap.NewClient(conn, addr, DialTimeout)
 	if err != nil {
 		return nil, e.New(err)
 	}
@@ -33,16 +48,6 @@ func PingImap(url *url.URL) error {
 	if url.Scheme != "imap" && url.Scheme != "imaps" {
 		return e.New("not an imap/imaps scheme")
 	}
-
-	var err error
-
-	null, err := os.OpenFile(os.DevNull, os.O_WRONLY|os.O_APPEND, 0600)
-	if err == nil {
-		imap.DefaultLogger = log.New(null, "", 0)
-	}
-	imap.DefaultLogMask = imap.LogNone
-	defer null.Close()
-
 	c, err := dialImap(url.Host)
 	if err != nil {
 		return e.Push(err, ErrImapFailed)

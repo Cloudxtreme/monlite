@@ -36,8 +36,13 @@ type Entry interface {
 	// Sorter set one filter for the backend associated with the logger.
 	// This filter works after the filter set in the New statment.
 	Sorter(r Ruler) Logger
-	// SetLevel sets the log Level for this logger
-	SetLevel(l Level) Logger
+	// SetLevel sets the log Level for this logger. Scope all setlevel for everything.
+	// If Scope is a packege set log level only for this package.
+	SetLevel(scope string, l Level) Logger
+	// EntryLevel set the level for this log entry.
+	EntryLevel(l Level) Logger
+	// DebugInfo write into the struct debug information.
+	DebugInfo() Logger
 }
 
 type TemplateSetup interface {
@@ -147,7 +152,7 @@ type PanicStack interface {
 // logger, in this case the backend that implements OtherLogger
 type OuterLogger interface {
 	// OtherLog creats a writer that receive log entries separeted by \n.
-	OuterLog(tag string) io.Writer
+	OuterLog(level Level, tags ...string) io.Writer
 	// Close closses the outer logger. If not closed you will have a leeked gorotine.
 	Close() error
 }

@@ -13,7 +13,7 @@ import (
 
 // PingUnix try to connect to an unix socket.
 func PingUnix(url *url.URL) error {
-	conn, err := net.Dial("unix", url.Host)
+	conn, err := net.DialTimeout("unix", url.Host, DialTimeout)
 	if err != nil {
 		return e.New(err)
 	}

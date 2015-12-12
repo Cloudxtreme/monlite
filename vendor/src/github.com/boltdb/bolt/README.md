@@ -1,8 +1,8 @@
 Bolt [![Build Status](https://drone.io/github.com/boltdb/bolt/status.png)](https://drone.io/github.com/boltdb/bolt/latest) [![Coverage Status](https://coveralls.io/repos/boltdb/bolt/badge.png?branch=master)](https://coveralls.io/r/boltdb/bolt?branch=master) [![GoDoc](https://godoc.org/github.com/boltdb/bolt?status.png)](https://godoc.org/github.com/boltdb/bolt) ![Version](http://img.shields.io/badge/version-1.0-green.png)
 ====
 
-Bolt is a pure Go key/value store inspired by [Howard Chu's][hyc_symas] and
-the [LMDB project][lmdb]. The goal of the project is to provide a simple,
+Bolt is a pure Go key/value store inspired by [Howard Chu's][hyc_symas]
+[LMDB project][lmdb]. The goal of the project is to provide a simple,
 fast, and reliable database for projects that don't require a full database
 server such as Postgres or MySQL.
 
@@ -269,7 +269,7 @@ then you must use `copy()` to copy it to another byte slice.
 
 
 ### Autoincrementing integer for the bucket
-By using the NextSequence() function, you can let Bolt determine a sequence
+By using the `NextSequence()` function, you can let Bolt determine a sequence
 which can be used as the unique identifier for your key/value pairs. See the
 example below.
 
@@ -344,10 +344,15 @@ Next()   Move to the next key.
 Prev()   Move to the previous key.
 ```
 
-When you have iterated to the end of the cursor then `Next()` will return `nil`.
-You must seek to a position using `First()`, `Last()`, or `Seek()` before
-calling `Next()` or `Prev()`. If you do not seek to a position then these
-functions will return `nil`.
+Each of those functions has a return signature of `(key []byte, value []byte)`.
+When you have iterated to the end of the cursor then `Next()` will return a
+`nil` key.  You must seek to a position using `First()`, `Last()`, or `Seek()`
+before calling `Next()` or `Prev()`. If you do not seek to a position then
+these functions will return a `nil` key.
+
+During iteration, if the key is non-`nil` but the value is `nil`, that means
+the key refers to a bucket rather than a value.  Use `Bucket.Bucket()` to
+access the sub-bucket.
 
 
 #### Prefix scans
@@ -426,8 +431,11 @@ func (*Bucket) DeleteBucket(key []byte) error
 Bolt is a single file so it's easy to backup. You can use the `Tx.WriteTo()`
 function to write a consistent view of the database to a writer. If you call
 this from a read-only transaction, it will perform a hot backup and not block
-your other database reads and writes. It will also use `O_DIRECT` when available
-to prevent page cache trashing.
+your other database reads and writes.
+
+By default, it will use a regular file handle which will utilize the operating
+system's page cache. See the [`Tx`](https://godoc.org/github.com/boltdb/bolt#Tx)
+documentation for information about optimizing for larger-than-RAM datasets.
 
 One common use case is to backup over HTTP so you can use tools like `cURL` to
 do database backups:
@@ -580,9 +588,8 @@ It's important to pick the right tool for the job and Bolt is no exception.
 Here are a few things to note when evaluating and using Bolt:
 
 * Bolt is good for read intensive workloads. Sequential write performance is
-  also fast but random writes can be slow. You can add a write-ahead log or
-  [transaction coalescer](https://github.com/boltdb/coalescer) in front of Bolt
-  to mitigate this issue.
+  also fast but random writes can be slow. You can use `DB.Batch()` or add a
+  write-ahead log to help mitigate this issue.
 
 * Bolt uses a B+tree internally so there can be a lot of random page access.
   SSDs provide a significant performance boost over spinning disks.
@@ -618,7 +625,7 @@ Here are a few things to note when evaluating and using Bolt:
 
 * The data structures in the Bolt database are memory mapped so the data file
   will be endian specific. This means that you cannot copy a Bolt file from a
-  little endian machine to a big endian machine and have it work. For most 
+  little endian machine to a big endian machine and have it work. For most
   users this is not a concern since most modern CPUs are little endian.
 
 * Because of the way pages are laid out on disk, Bolt cannot truncate data files

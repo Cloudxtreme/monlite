@@ -60,11 +60,19 @@ func (et *entryTest) Formatter(f Formatter) {
 
 }
 
-func (et *entryTest) SetLevel(level Level) Logger {
+func (et *entryTest) SetLevel(scope string, level Level) Logger {
 	return nil
 }
 
 func (et *entryTest) Sorter(r Ruler) Logger {
+	return nil
+}
+
+func (et *entryTest) EntryLevel(l Level) Logger {
+	return nil
+}
+
+func (et *entryTest) DebugInfo() Logger {
 	return nil
 }
 
@@ -112,11 +120,19 @@ func (et *entryTest2) Formatter(f Formatter) {
 
 }
 
-func (et *entryTest2) SetLevel(level Level) Logger {
+func (et *entryTest2) SetLevel(scope string, level Level) Logger {
 	return nil
 }
 
 func (et *entryTest2) Sorter(r Ruler) Logger {
+	return nil
+}
+
+func (et *entryTest2) EntryLevel(l Level) Logger {
+	return nil
+}
+
+func (et *entryTest2) DebugInfo() Logger {
 	return nil
 }
 

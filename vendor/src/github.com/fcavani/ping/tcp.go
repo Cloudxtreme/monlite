@@ -13,7 +13,7 @@ import (
 
 // PingTCP try to connect a TCP port.
 func PingTCP(url *url.URL) error {
-	conn, err := net.Dial("tcp", url.Host)
+	conn, err := net.DialTimeout("tcp", url.Host, DialTimeout)
 	if err != nil {
 		return e.New(err)
 	}

@@ -6,11 +6,24 @@ package ping
 
 import (
 	"database/sql"
+	"net"
 	"net/url"
 
 	"github.com/fcavani/e"
-	_ "github.com/go-sql-driver/mysql"
+	"github.com/fcavani/log"
+	"github.com/go-sql-driver/mysql"
 )
+
+func init() {
+	mysql.RegisterDial("tcp", func(addr string) (net.Conn, error) {
+		return (&net.Dialer{Timeout: DialTimeout}).Dial("tcp", addr)
+	})
+	mysql.RegisterDial("unix", func(addr string) (net.Conn, error) {
+		return (&net.Dialer{Timeout: DialTimeout}).Dial("unix", addr)
+	})
+	logger := log.Log.Tag("mysql").DebugLevel()
+	mysql.SetLogger(logger)
+}
 
 // PingMySql connects a mysql server and send a ping.
 func PingMySql(u *url.URL) error {

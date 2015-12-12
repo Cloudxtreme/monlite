@@ -20,7 +20,7 @@ var Deadline time.Duration = 30 * time.Second
 // besides timeout, the host is down. If timeoutr
 // I can't determine if the host is there or not.
 func PingUDP(url *url.URL) error {
-	conn, err := net.Dial("udp", url.Host)
+	conn, err := net.DialTimeout("udp", url.Host, DialTimeout)
 	if err != nil {
 		return e.New(err)
 	}

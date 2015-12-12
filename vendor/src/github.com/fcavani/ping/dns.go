@@ -15,7 +15,7 @@ import (
 // PingDns test if a dns server is alive.
 func PingDns(url *url.URL) error {
 	url.Path = strings.Trim(url.Path, "/")
-	addrs, err := dns.LookupHostWithServers(url.Path, []string{url.Host}, 5, 30)
+	addrs, err := dns.LookupHostWithServers(url.Path, []string{url.Host}, 5, DialTimeout)
 	if err != nil {
 		return e.Forward(err)
 	}

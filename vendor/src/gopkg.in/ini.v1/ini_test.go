@@ -15,6 +15,7 @@
 package ini
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 	"testing"
@@ -40,7 +41,7 @@ IMPORT_PATH = gopkg.in/%(NAME)s.%(VERSION)s
 # Information about package author
 # Bio can be written in multiple lines.
 [author]
-NAME = Unknwon  # Succeeding comment
+NAME = Unknwon  ; Succeeding comment
 E-MAIL = fake@localhost
 GITHUB = https://github.com/%(NAME)s
 BIO = """Gopher.
@@ -67,24 +68,33 @@ FLOAT64 = 1.25
 INT = 10
 TIME = 2015-01-01T20:17:05Z
 DURATION = 2h45m
+UINT = 3
 
 [array]
 STRINGS = en, zh, de
 FLOAT64S = 1.1, 2.2, 3.3
 INTS = 1, 2, 3
+UINTS = 1, 2, 3
 TIMES = 2015-01-01T20:17:05Z,2015-01-01T20:17:05Z,2015-01-01T20:17:05Z
 
 [note]
 empty_lines = next line is empty\
 
+; Comment before the section
+[comments] ; This is a comment for the section too
+; Comment before key
+key = "value"
+key2 = "value2" ; This is a comment for key2
+key3 = "one", "two", "three"
+
 [advance]
 value with quotes = "some value"
 value quote2 again = 'some value'
-true = """"2+3=5""""
+true = 2+3=5
 "1+1=2" = true
 """6+1=7""" = true
 """` + "`" + `5+5` + "`" + `""" = 10
-""""6+6"""" = 12
+` + "`" + `"6+6"` + "`" + ` = 12
 ` + "`" + `7-2=4` + "`" + ` = false
 ADDRESS = ` + "`" + `404 road,
 NotFound, State, 50000` + "`" + `
@@ -117,8 +127,9 @@ func Test_Load(t *testing.T) {
 			_, err := Load(_CONF_DATA)
 			So(err, ShouldNotBeNil)
 
-			_, err = Load("testdata/404.ini")
+			f, err := Load("testdata/404.ini")
 			So(err, ShouldNotBeNil)
+			So(f, ShouldBeNil)
 
 			_, err = Load(1)
 			So(err, ShouldNotBeNil)
@@ -127,8 +138,11 @@ func Test_Load(t *testing.T) {
 			So(err, ShouldNotBeNil)
 		})
 
-		Convey("Load with empty section name", func() {
+		Convey("Load with bad section name", func() {
 			_, err := Load([]byte("[]"))
+			So(err, ShouldNotBeNil)
+
+			_, err = Load([]byte("["))
 			So(err, ShouldNotBeNil)
 		})
 
@@ -151,9 +165,6 @@ func Test_Load(t *testing.T) {
 
 		Convey("Load with bad values", func() {
 			_, err := Load([]byte(`name="""Unknwon`))
-			So(err, ShouldNotBeNil)
-
-			_, err = Load([]byte(`key = "value`))
 			So(err, ShouldNotBeNil)
 		})
 	})
@@ -201,13 +212,14 @@ func Test_Values(t *testing.T) {
 
 		Convey("Get sections", func() {
 			sections := cfg.Sections()
-			for i, name := range []string{DEFAULT_SECTION, "author", "package", "package.sub", "features", "types", "array", "note", "advance"} {
+			for i, name := range []string{DEFAULT_SECTION, "author", "package", "package.sub", "features", "types", "array", "note", "comments", "advance"} {
 				So(sections[i].Name(), ShouldEqual, name)
 			}
 		})
 
 		Convey("Get parent section value", func() {
 			So(cfg.Section("package.sub").Key("CLONE_URL").String(), ShouldEqual, "https://gopkg.in/ini.v1")
+			So(cfg.Section("package.fake.sub").Key("CLONE_URL").String(), ShouldEqual, "https://gopkg.in/ini.v1")
 		})
 
 		Convey("Get multiple line value", func() {
@@ -236,11 +248,19 @@ func Test_Values(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(v4, ShouldEqual, 10)
 
+			v5, err := sec.Key("UINT").Uint()
+			So(err, ShouldBeNil)
+			So(v5, ShouldEqual, 3)
+
+			v6, err := sec.Key("UINT").Uint64()
+			So(err, ShouldBeNil)
+			So(v6, ShouldEqual, 3)
+
 			t, err := time.Parse(time.RFC3339, "2015-01-01T20:17:05Z")
 			So(err, ShouldBeNil)
-			v5, err := sec.Key("TIME").Time()
+			v7, err := sec.Key("TIME").Time()
 			So(err, ShouldBeNil)
-			So(v5.String(), ShouldEqual, t.String())
+			So(v7.String(), ShouldEqual, t.String())
 
 			Convey("Must get values with type", func() {
 				So(sec.Key("STRING").MustString("404"), ShouldEqual, "str")
@@ -248,6 +268,8 @@ func Test_Values(t *testing.T) {
 				So(sec.Key("FLOAT64").MustFloat64(), ShouldEqual, 1.25)
 				So(sec.Key("INT").MustInt(), ShouldEqual, 10)
 				So(sec.Key("INT").MustInt64(), ShouldEqual, 10)
+				So(sec.Key("UINT").MustUint(), ShouldEqual, 3)
+				So(sec.Key("UINT").MustUint64(), ShouldEqual, 3)
 				So(sec.Key("TIME").MustTime().String(), ShouldEqual, t.String())
 
 				dur, err := time.ParseDuration("2h45m")
@@ -260,6 +282,8 @@ func Test_Values(t *testing.T) {
 					So(sec.Key("FLOAT64_404").MustFloat64(2.5), ShouldEqual, 2.5)
 					So(sec.Key("INT_404").MustInt(15), ShouldEqual, 15)
 					So(sec.Key("INT_404").MustInt64(15), ShouldEqual, 15)
+					So(sec.Key("UINT_404").MustUint(6), ShouldEqual, 6)
+					So(sec.Key("UINT_404").MustUint64(6), ShouldEqual, 6)
 
 					t, err := time.Parse(time.RFC3339, "2014-01-01T20:17:05Z")
 					So(err, ShouldBeNil)
@@ -276,6 +300,8 @@ func Test_Values(t *testing.T) {
 			So(sec.Key("FLOAT64").InFloat64(0, []float64{1.25, 2.5, 3.75}), ShouldEqual, 1.25)
 			So(sec.Key("INT").InInt(0, []int{10, 20, 30}), ShouldEqual, 10)
 			So(sec.Key("INT").InInt64(0, []int64{10, 20, 30}), ShouldEqual, 10)
+			So(sec.Key("UINT").InUint(0, []uint{3, 6, 9}), ShouldEqual, 3)
+			So(sec.Key("UINT").InUint64(0, []uint64{3, 6, 9}), ShouldEqual, 3)
 
 			zt, err := time.Parse(time.RFC3339, "0001-01-01T01:00:00Z")
 			So(err, ShouldBeNil)
@@ -288,6 +314,8 @@ func Test_Values(t *testing.T) {
 				So(sec.Key("FLOAT64_404").InFloat64(1.25, []float64{1.25, 2.5, 3.75}), ShouldEqual, 1.25)
 				So(sec.Key("INT_404").InInt(10, []int{10, 20, 30}), ShouldEqual, 10)
 				So(sec.Key("INT64_404").InInt64(10, []int64{10, 20, 30}), ShouldEqual, 10)
+				So(sec.Key("UINT_404").InUint(3, []uint{3, 6, 9}), ShouldEqual, 3)
+				So(sec.Key("UINT_404").InUint64(3, []uint64{3, 6, 9}), ShouldEqual, 3)
 				So(sec.Key("TIME_404").InTime(t, []time.Time{time.Now(), time.Now(), time.Now().Add(1 * time.Second)}).String(), ShouldEqual, t.String())
 			})
 		})
@@ -336,11 +364,21 @@ func Test_Values(t *testing.T) {
 				So(vals3[i], ShouldEqual, v)
 			}
 
+			vals4 := sec.Key("UINTS").Uints(",")
+			for i, v := range []uint{1, 2, 3} {
+				So(vals4[i], ShouldEqual, v)
+			}
+
+			vals5 := sec.Key("UINTS").Uint64s(",")
+			for i, v := range []uint64{1, 2, 3} {
+				So(vals5[i], ShouldEqual, v)
+			}
+
 			t, err := time.Parse(time.RFC3339, "2015-01-01T20:17:05Z")
 			So(err, ShouldBeNil)
-			vals4 := sec.Key("TIMES").Times(",")
+			vals6 := sec.Key("TIMES").Times(",")
 			for i, v := range []time.Time{t, t, t} {
-				So(vals4[i].String(), ShouldEqual, v.String())
+				So(vals6[i].String(), ShouldEqual, v.String())
 			}
 		})
 
@@ -355,7 +393,7 @@ func Test_Values(t *testing.T) {
 		})
 
 		Convey("Get key strings", func() {
-			So(strings.Join(cfg.Section("types").KeyStrings(), ","), ShouldEqual, "STRING,BOOL,BOOL_FALSE,FLOAT64,INT,TIME,DURATION")
+			So(strings.Join(cfg.Section("types").KeyStrings(), ","), ShouldEqual, "STRING,BOOL,BOOL_FALSE,FLOAT64,INT,TIME,DURATION,UINT")
 		})
 
 		Convey("Delete a key", func() {
@@ -364,8 +402,36 @@ func Test_Values(t *testing.T) {
 			So(err, ShouldNotBeNil)
 		})
 
+		Convey("Has Key (backwards compatible)", func() {
+			sec := cfg.Section("package.sub")
+			haskey1 := sec.Haskey("UNUSED_KEY")
+			haskey2 := sec.Haskey("CLONE_URL")
+			haskey3 := sec.Haskey("CLONE_URL_NO")
+			So(haskey1, ShouldBeTrue)
+			So(haskey2, ShouldBeTrue)
+			So(haskey3, ShouldBeFalse)
+		})
+
+		Convey("Has Key", func() {
+			sec := cfg.Section("package.sub")
+			haskey1 := sec.HasKey("UNUSED_KEY")
+			haskey2 := sec.HasKey("CLONE_URL")
+			haskey3 := sec.HasKey("CLONE_URL_NO")
+			So(haskey1, ShouldBeTrue)
+			So(haskey2, ShouldBeTrue)
+			So(haskey3, ShouldBeFalse)
+		})
+
+		Convey("Has Value", func() {
+			sec := cfg.Section("author")
+			hasvalue1 := sec.HasValue("Unknwon")
+			hasvalue2 := sec.HasValue("doc")
+			So(hasvalue1, ShouldBeTrue)
+			So(hasvalue2, ShouldBeFalse)
+		})
+
 		Convey("Get section strings", func() {
-			So(strings.Join(cfg.SectionStrings(), ","), ShouldEqual, "DEFAULT,author,package,package.sub,features,types,array,note,advance")
+			So(strings.Join(cfg.SectionStrings(), ","), ShouldEqual, "DEFAULT,author,package,package.sub,features,types,array,note,comments,advance")
 		})
 
 		Convey("Delete a section", func() {
@@ -412,6 +478,22 @@ func Test_Values(t *testing.T) {
 			So(s, ShouldNotBeNil)
 		})
 	})
+
+	Convey("Test key hash clone", t, func() {
+		cfg, err := Load([]byte(strings.Replace("network=tcp,addr=127.0.0.1:6379,db=4,pool_size=100,idle_timeout=180", ",", "\n", -1)))
+		So(err, ShouldBeNil)
+		for _, v := range cfg.Section("").KeysHash() {
+			So(len(v), ShouldBeGreaterThan, 0)
+		}
+	})
+
+	Convey("Key has empty value", t, func() {
+		_conf := `key1=
+key2= ; comment`
+		cfg, err := Load([]byte(_conf))
+		So(err, ShouldBeNil)
+		So(cfg.Section("").Key("key1").Value(), ShouldBeEmpty)
+	})
 }
 
 func Test_File_Append(t *testing.T) {
@@ -426,6 +508,14 @@ func Test_File_Append(t *testing.T) {
 			So(cfg.Append(1), ShouldNotBeNil)
 			So(cfg.Append([]byte(""), 1), ShouldNotBeNil)
 		})
+	})
+}
+
+func Test_File_WriteTo(t *testing.T) {
+	Convey("Write to somewhere", t, func() {
+		var buf bytes.Buffer
+		cfg := Empty()
+		cfg.WriteTo(&buf)
 	})
 }
 

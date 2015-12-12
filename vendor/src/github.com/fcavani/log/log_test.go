@@ -79,7 +79,7 @@ func TestLevels(t *testing.T) {
 	multi := NewMulti(NewSendToLogger(nil), DefFormatter, NewSendToLogger(l), DefFormatter)
 	Log = New(multi, false).Domain("test")
 
-	Log.SetLevel(DebugPrio)
+	Log.SetLevel("all", DebugPrio)
 
 	Println("oi")
 	test(t, buf, "oi")
@@ -502,7 +502,7 @@ func BenchmarkLogOuterNull(b *testing.B) {
 	if !ok {
 		return
 	}
-	w := olog.OuterLog("tag")
+	w := olog.OuterLog(DebugPrio, "tag")
 	defer olog.Close()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -539,7 +539,7 @@ func BenchmarkLogOuterFile(b *testing.B) {
 	if !ok {
 		return
 	}
-	w := olog.OuterLog("tag")
+	w := olog.OuterLog(DebugPrio, "tag")
 	defer olog.Close()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

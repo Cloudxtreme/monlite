@@ -4,7 +4,7 @@
 		{
 			"importpath": "github.com/boltdb/bolt",
 			"repository": "https://github.com/boltdb/bolt",
-			"revision": "119858097e94ac1089c404206de6f2eef3b22a9b",
+			"revision": "6d4e6a3ead833ba64932c56549bb8623afea0335",
 			"branch": "master"
 		},
 		{
@@ -28,7 +28,7 @@
 		{
 			"importpath": "github.com/fcavani/log",
 			"repository": "https://github.com/fcavani/log",
-			"revision": "2efff1d27cb5c1fbd65c2bdc91f9c7c0278a8998",
+			"revision": "15f0f2de3b857ec6306d9e2b573f1d913699f0c7",
 			"branch": "master"
 		},
 		{
@@ -40,20 +40,20 @@
 		{
 			"importpath": "github.com/fcavani/net",
 			"repository": "https://github.com/fcavani/net",
-			"revision": "35f9f2aa3cae24fc8d533e2396054878393d6877",
+			"revision": "c40b5ae63fcc0b9bf154420f42525d2532721b9d",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/fcavani/net/smtp",
 			"repository": "https://github.com/fcavani/net",
-			"revision": "35f9f2aa3cae24fc8d533e2396054878393d6877",
+			"revision": "c40b5ae63fcc0b9bf154420f42525d2532721b9d",
 			"branch": "master",
 			"path": "/smtp"
 		},
 		{
 			"importpath": "github.com/fcavani/ping",
 			"repository": "https://github.com/fcavani/ping",
-			"revision": "78ea865631980d89a5140e03cae4e17aa86f8583",
+			"revision": "3e1ff0f67e51bd81ed3604327eb13f20537018c1",
 			"branch": "master"
 		},
 		{
@@ -77,7 +77,7 @@
 		{
 			"importpath": "github.com/fcavani/types",
 			"repository": "https://github.com/fcavani/types",
-			"revision": "5a1acd11223186c58d6124663ee2e320c6779bbd",
+			"revision": "4622b8beee8dd31622d932ad0107337ae7b5a843",
 			"branch": "master"
 		},
 		{
@@ -102,19 +102,19 @@
 		{
 			"importpath": "github.com/go-sql-driver/mysql",
 			"repository": "https://github.com/go-sql-driver/mysql",
-			"revision": "69e3ed7607d7c139386480824801584c947c67cf",
+			"revision": "d512f204a577a4ab037a1816604c48c9c13210be",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/jessevdk/go-flags",
 			"repository": "https://github.com/jessevdk/go-flags",
-			"revision": "fc93116606d0a71d7e9de0ad5734fdb4b8eae834",
+			"revision": "aa34304f81c710f34c76e964a3d996ec1330711d",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/miekg/dns",
 			"repository": "https://github.com/miekg/dns",
-			"revision": "6a1556664fd2025e348a1c2349484a424a7d1d9a",
+			"revision": "75e6e86cc601825c5dbcd4e0c209eab180997cd7",
 			"branch": "master"
 		},
 		{
@@ -139,20 +139,20 @@
 		{
 			"importpath": "golang.org/x/exp/utf8string",
 			"repository": "https://go.googlesource.com/exp",
-			"revision": "d4ff832f359323d4975dc23ce589f98afcc46e4f",
+			"revision": "7ee4134c0991b10116a2166ecee6b93a4e713e3b",
 			"branch": "master",
 			"path": "/utf8string"
 		},
 		{
 			"importpath": "gopkg.in/ini.v1",
 			"repository": "https://gopkg.in/ini.v1",
-			"revision": "aea5e9fd2e7dc7701717f980b20ccbced24cbb85",
+			"revision": "a4e5487f4a695680ed4a5444b9a094df8eaf48cb",
 			"branch": "v1"
 		},
 		{
 			"importpath": "gopkg.in/mgo.v2",
 			"repository": "https://gopkg.in/mgo.v2",
-			"revision": "4d04138ffef2791c479c0c8bbffc30b34081b8d9",
+			"revision": "e30de8ac9ae3b30df7065f766c71f88bba7d4e49",
 			"branch": "v2"
 		}
 	]

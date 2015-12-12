@@ -30,7 +30,7 @@ func init() {
 	}
 	DefFormatter, _ = NewStdFormatter(
 		"::",
-		"::host - ::domain - ::date - ::level - ::tags - ::file ::msg",
+		"::host - ::domain - ::date - ::level - ::tags - ::file - ::msg",
 		&log{Labels: &tags.Tags{}},
 		map[string]interface{}{
 			"host": hostname,
@@ -53,6 +53,10 @@ type log struct {
 	store     LogBackend
 	Debug     bool
 	File      string `log:"file"`
+	Pkg       string `log:"pkg"`
+	Func      string `log:"func"`
+	Levels    map[string]*If
+	DefLevel  Ruler
 }
 
 func init() {
@@ -66,6 +70,8 @@ func New(b LogBackend, debug bool) *log {
 		Labels:   &tags.Tags{},
 		store:    b,
 		Debug:    debug,
+		Levels:   make(map[string]*If),
+		DefLevel: True{},
 	}
 }
 
@@ -111,6 +117,11 @@ func (l *log) clone() *log {
 		E:         e.Copy(l.E),
 		store:     l.store,
 		Debug:     l.Debug,
+		File:      l.File,
+		Pkg:       l.Pkg,
+		Func:      l.Func,
+		Levels:    l.Levels,
+		DefLevel:  l.DefLevel,
 	}
 }
 
@@ -122,13 +133,14 @@ func (l *log) error(err error) {
 	n.FatalLevel().Domain("logger").Tag("internal").Tag("error").Println(err)
 }
 
-func (l *log) debugInfo() {
-	if !l.Debug {
+func (l *log) debugInfo(level int) {
+	if !l.Debug || l.File != "" {
 		return
 	}
 	var ok bool
 	var line int
-	_, l.File, line, ok = runtime.Caller(2)
+	var pc uintptr
+	pc, l.File, line, ok = runtime.Caller(level)
 	if ok {
 		s := strings.Split(l.File, "/")
 		length := len(s)
@@ -137,7 +149,19 @@ func (l *log) debugInfo() {
 		} else {
 			l.File = s[0] + ":" + strconv.Itoa(line)
 		}
+		f := runtime.FuncForPC(pc)
+		l.Func = f.Name()
+		i := strings.LastIndex(l.Func, ".")
+		if i > -1 {
+			l.Pkg = l.Func[:i]
+		}
 	}
+}
+
+func (l *log) DebugInfo() Logger {
+	n := l.clone()
+	n.debugInfo(3)
+	return n
 }
 
 func (l *log) Err() error {
@@ -209,8 +233,20 @@ func (l *log) Sorter(r Ruler) Logger {
 	return n
 }
 
-func (l *log) SetLevel(level Level) Logger {
-	l.store.Filter(Op(Le, "level", level))
+func (l *log) SetLevel(scope string, level Level) Logger {
+	if scope == "all" {
+		l.DefLevel = Op(Ge, "level", level)
+	} else {
+		l.Levels[scope] = &If{
+			Condition: Op(Pr, "pkg", scope),
+			Than:      Op(Ge, "level", level),
+		}
+	}
+	ifs := make([]*If, 0, len(l.Levels))
+	for _, cond := range l.Levels {
+		ifs = append(ifs, cond)
+	}
+	l.store.Filter(Select(ifs, l.DefLevel))
 	return l
 }
 
@@ -238,7 +274,7 @@ func (l *log) Print(v ...interface{}) {
 	n := l.clone()
 	n.Msg = fmt.Sprint(v...)
 	n.Timestamp = time.Now()
-	n.debugInfo()
+	n.debugInfo(2)
 	n.store.Commit(n)
 }
 
@@ -246,7 +282,7 @@ func (l *log) Printf(f string, v ...interface{}) {
 	n := l.clone()
 	n.Msg = fmt.Sprintf(f, v...)
 	n.Timestamp = time.Now()
-	n.debugInfo()
+	n.debugInfo(2)
 	n.store.Commit(n)
 }
 
@@ -254,7 +290,7 @@ func (l *log) Println(v ...interface{}) {
 	n := l.clone()
 	n.Msg = fmt.Sprintln(v...)
 	n.Timestamp = time.Now()
-	n.debugInfo()
+	n.debugInfo(2)
 	n.store.Commit(n)
 }
 
@@ -263,7 +299,7 @@ func (l *log) Fatal(v ...interface{}) {
 	n.Priority = FatalPrio
 	n.Msg = fmt.Sprint(v...)
 	n.Timestamp = time.Now()
-	n.debugInfo()
+	n.debugInfo(2)
 	n.store.Commit(n)
 	os.Exit(1)
 }
@@ -273,7 +309,7 @@ func (l *log) Fatalf(f string, v ...interface{}) {
 	n.Priority = FatalPrio
 	n.Msg = fmt.Sprintf(f, v...)
 	n.Timestamp = time.Now()
-	n.debugInfo()
+	n.debugInfo(2)
 	n.store.Commit(n)
 	os.Exit(1)
 }
@@ -283,7 +319,7 @@ func (l *log) Fatalln(v ...interface{}) {
 	n.Priority = FatalPrio
 	n.Msg = fmt.Sprintln(v...)
 	n.Timestamp = time.Now()
-	n.debugInfo()
+	n.debugInfo(2)
 	n.store.Commit(n)
 	os.Exit(1)
 }
@@ -293,7 +329,7 @@ func (l *log) Panic(v ...interface{}) {
 	n.Priority = PanicPrio
 	n.Msg = fmt.Sprint(v...)
 	n.Timestamp = time.Now()
-	n.debugInfo()
+	n.debugInfo(2)
 	n.store.Commit(n)
 	panic(n.Msg)
 }
@@ -303,7 +339,7 @@ func (l *log) Panicf(f string, v ...interface{}) {
 	n.Priority = PanicPrio
 	n.Msg = fmt.Sprintf(f, v...)
 	n.Timestamp = time.Now()
-	n.debugInfo()
+	n.debugInfo(2)
 	n.store.Commit(n)
 	panic(n.Msg)
 }
@@ -313,7 +349,7 @@ func (l *log) Panicln(v ...interface{}) {
 	n.Priority = PanicPrio
 	n.Msg = fmt.Sprintln(v...)
 	n.Timestamp = time.Now()
-	n.debugInfo()
+	n.debugInfo(2)
 	n.store.Commit(n)
 	panic(n.Msg)
 }
@@ -323,7 +359,7 @@ func (l *log) Error(v ...interface{}) {
 	n.Priority = ErrorPrio
 	n.Msg = fmt.Sprint(v...)
 	n.Timestamp = time.Now()
-	n.debugInfo()
+	n.debugInfo(2)
 	n.store.Commit(n)
 }
 
@@ -332,7 +368,7 @@ func (l *log) Errorf(f string, v ...interface{}) {
 	n.Priority = ErrorPrio
 	n.Msg = fmt.Sprintf(f, v...)
 	n.Timestamp = time.Now()
-	n.debugInfo()
+	n.debugInfo(2)
 	n.store.Commit(n)
 }
 
@@ -341,7 +377,7 @@ func (l *log) Errorln(v ...interface{}) {
 	n.Priority = ErrorPrio
 	n.Msg = fmt.Sprintln(v...)
 	n.Timestamp = time.Now()
-	n.debugInfo()
+	n.debugInfo(2)
 	n.store.Commit(n)
 }
 
@@ -362,6 +398,12 @@ func (l *log) GoPanic(r interface{}, stack []byte, cont bool) {
 	if !cont {
 		os.Exit(1)
 	}
+}
+
+func (l *log) EntryLevel(prio Level) Logger {
+	n := l.clone()
+	n.Priority = prio
+	return n
 }
 
 func (l *log) ProtoLevel() Logger {
@@ -419,51 +461,51 @@ func Domain(d string) Logger {
 }
 
 func Print(vals ...interface{}) {
-	Log.Print(vals...)
+	Log.DebugInfo().Print(vals...)
 }
 
 func Printf(str string, vals ...interface{}) {
-	Log.Printf(str, vals...)
+	Log.DebugInfo().Printf(str, vals...)
 }
 
 func Println(vals ...interface{}) {
-	Log.Println(vals...)
+	Log.DebugInfo().Println(vals...)
 }
 
 func Fatal(vals ...interface{}) {
-	Log.Fatal(vals...)
+	Log.DebugInfo().Fatal(vals...)
 }
 
 func Fatalf(s string, vals ...interface{}) {
-	Log.Fatalf(s, vals...)
+	Log.DebugInfo().Fatalf(s, vals...)
 }
 
 func Fatalln(vals ...interface{}) {
-	Log.Fatalln(vals...)
+	Log.DebugInfo().Fatalln(vals...)
 }
 
 func Panic(vals ...interface{}) {
-	Log.Panic(vals...)
+	Log.DebugInfo().Panic(vals...)
 }
 
 func Panicf(s string, vals ...interface{}) {
-	Log.Panicf(s, vals...)
+	Log.DebugInfo().Panicf(s, vals...)
 }
 
 func Panicln(vals ...interface{}) {
-	Log.Panicln(vals...)
+	Log.DebugInfo().Panicln(vals...)
 }
 
 func Error(vals ...interface{}) {
-	Log.Error(vals...)
+	Log.DebugInfo().Error(vals...)
 }
 
 func Errorf(s string, vals ...interface{}) {
-	Log.Errorf(s, vals...)
+	Log.DebugInfo().Errorf(s, vals...)
 }
 
 func Errorln(vals ...interface{}) {
-	Log.Errorln(vals...)
+	Log.DebugInfo().Errorln(vals...)
 }
 
 func ProtoLevel() Logger {
@@ -521,6 +563,24 @@ func Sorter(r Ruler) Logger {
 	return Log.Sorter(r)
 }
 
-func SetLevel(l Level) Logger {
-	return Log.SetLevel(l)
+func SetLevel(scope string, l Level) Logger {
+	return Log.SetLevel(scope, l)
+}
+
+func EntryLevel(prio Level) Logger {
+	return Log.EntryLevel(prio)
+}
+
+// RecoverBufferStack amont of buffer to store the stack.
+var RecoverBufferStack = 4096
+
+// Recover from panic and log the stack. If notexit is false, call os.Exit(1),
+// if not continue.
+func Recover(notexit bool) {
+	if r := recover(); r != nil {
+		buf := make([]byte, RecoverBufferStack)
+		n := runtime.Stack(buf, true)
+		buf = buf[:n]
+		Log.GoPanic(r, buf, notexit)
+	}
 }
